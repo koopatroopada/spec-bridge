@@ -32,16 +32,37 @@ function toSpec(data: FormData): Spec {
   };
 }
 
-export function SpecForm({ onSubmit }: { onSubmit: (spec: Spec) => void }) {
+function fromSpec(spec: Spec): FormData {
+  const ex = spec.examples[0]!;
+  const inputKey = Object.keys(ex.input)[0] ?? "input";
+  const inputValue = ex.input[inputKey] ?? "";
+  return {
+    name: spec.name,
+    description: spec.description,
+    prompt_template: spec.prompt_template,
+    example_input_key: inputKey,
+    example_input_value: inputValue,
+    example_expected_output: ex.expected_output,
+    eval_criterion: spec.eval_criteria[0]!.description,
+  };
+}
+
+export function SpecForm({
+  initialData,
+  onSubmit,
+  submitLabel = "生成 JSON",
+}: {
+  initialData?: Spec;
+  onSubmit: (spec: Spec) => void;
+  submitLabel?: string;
+}) {
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      example_input_key: "input",
-    },
+    defaultValues: initialData ? fromSpec(initialData) : { example_input_key: "input" },
   });
 
   return (
@@ -162,7 +183,7 @@ export function SpecForm({ onSubmit }: { onSubmit: (spec: Spec) => void }) {
         type="submit"
         className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       >
-        生成 JSON
+        {submitLabel}
       </button>
     </form>
   );

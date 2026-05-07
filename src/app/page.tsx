@@ -1,107 +1,96 @@
 "use client";
 
-import { useState } from "react";
-import { SpecForm } from "@/components/spec-form/spec-form";
-import { LintPanel } from "@/components/lint-panel/lint-panel";
-import { exportToJson } from "@/lib/exporters/json-spec";
-import { exportToPromptfooYaml } from "@/lib/exporters/promptfoo-yaml";
-import { exportToPrdMarkdown } from "@/lib/exporters/prd-markdown";
-import { lintSpec, type LintResult } from "@/lib/linter";
-import type { Spec } from "@/lib/spec-schema";
-
-type DownloadItem = {
-  label: string;
-  fileName: string;
-  url: string;
-};
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  loadSpecs,
+  deleteSpec,
+  duplicateSpec,
+  type StoredSpec,
+} from "@/lib/storage";
 
 export default function HomePage() {
-  const [downloads, setDownloads] = useState<DownloadItem[]>([]);
-  const [prdPreview, setPrdPreview] = useState("");
-  const [lintResult, setLintResult] = useState<LintResult | null>(null);
+  const router = useRouter();
+  const [specs, setSpecs] = useState<StoredSpec[]>([]);
 
-  function handleSubmit(spec: Spec) {
-    const safeName = spec.name.replace(/\s+/g, "_");
+  useEffect(() => {
+    setSpecs(loadSpecs());
+  }, []);
 
-    const items: DownloadItem[] = [
-      {
-        label: "JSON",
-        fileName: `${safeName}.json`,
-        url: URL.createObjectURL(
-          new Blob([exportToJson(spec)], { type: "application/json" })
-        ),
-      },
-      {
-        label: "Promptfoo YAML",
-        fileName: `${safeName}.yaml`,
-        url: URL.createObjectURL(
-          new Blob([exportToPromptfooYaml(spec)], { type: "text/yaml" })
-        ),
-      },
-      {
-        label: "PRD (Markdown)",
-        fileName: `${safeName}.md`,
-        url: URL.createObjectURL(
-          new Blob([exportToPrdMarkdown(spec)], { type: "text/markdown" })
-        ),
-      },
-    ];
+  function handleDelete(id: string) {
+    if (!confirm("确定删除这个 spec？")) return;
+    deleteSpec(id);
+    setSpecs(loadSpecs());
+  }
 
-    setDownloads(items);
-    setPrdPreview(exportToPrdMarkdown(spec));
-    setLintResult(lintSpec(spec));
+  function handleDuplicate(id: string) {
+    duplicateSpec(id);
+    setSpecs(loadSpecs());
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">spec-bridge</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          录入 AI 功能 spec，一键导出 JSON / Promptfoo YAML / PRD
-        </p>
+    <main className="mx-auto max-w-4xl p-8">
+      <header className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">spec-bridge</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            管理你的 AI 功能 spec
+          </p>
+        </div>
+        <button
+          onClick={() => router.push("/editor/new")}
+          className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          + 新建 spec
+        </button>
       </header>
 
-      <SpecForm onSubmit={handleSubmit} />
-
-      {lintResult && (
-        <section className="mt-6">
-          <LintPanel result={lintResult} />
-        </section>
-      )}
-
-      {downloads.length > 0 && (
-        <section className="mt-6">
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-            <p className="text-sm font-medium text-green-800">
-              spec 已验证通过，可下载：
-            </p>
-            <div className="mt-3 flex flex-wrap gap-3">
-              {downloads.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.url}
-                  download={item.fileName}
-                  className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+      {specs.length === 0 ? (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center">
+          <p className="text-slate-500">还没有 spec，点击右上角新建一个</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {specs.map((s) => (
+            <div
+              key={s.id}
+              className="flex items-center justify-between rounded-lg border border-slate-200 p-4 hover:border-slate-300"
+            >
+              <div className="min-w-0">
+                <h3 className="truncate text-base font-semibold text-slate-800">
+                  {s.spec.name}
+                </h3>
+                <p className="mt-1 truncate text-sm text-slate-500">
+                  {s.spec.description}
+                </p>
+                <p className="mt-1 text-xs text-slate-400">
+                  更新于{" "}
+                  {new Date(s.updatedAt).toLocaleString("zh-CN")}
+                </p>
+              </div>
+              <div className="ml-4 flex shrink-0 gap-2">
+                <button
+                  onClick={() => router.push(`/editor/${s.id}`)}
+                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
                 >
-                  下载 {item.fileName}
-                </a>
-              ))}
+                  编辑
+                </button>
+                <button
+                  onClick={() => handleDuplicate(s.id)}
+                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  复制
+                </button>
+                <button
+                  onClick={() => handleDelete(s.id)}
+                  className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+                >
+                  删除
+                </button>
+              </div>
             </div>
-          </div>
-        </section>
-      )}
-
-      {prdPreview && (
-        <section className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold text-slate-800">
-            PRD 预览
-          </h2>
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <pre className="whitespace-pre-wrap font-mono text-sm text-slate-700">
-              {prdPreview}
-            </pre>
-          </div>
-        </section>
+          ))}
+        </div>
       )}
     </main>
   );
