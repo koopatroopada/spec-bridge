@@ -52,9 +52,11 @@ describe("exportToPromptfooYaml", () => {
     expect(tests[0]!.vars).toEqual({ email: "我订单还没发货!" });
 
     const asserts = tests[0]!.assert as Array<Record<string, unknown>>;
-    expect(asserts).toHaveLength(1);
+    expect(asserts.length).toBeGreaterThanOrEqual(2);
     expect(asserts[0]!.type).toBe("equals");
     expect(asserts[0]!.value).toBe("high");
+    expect(asserts[1]!.type).toBe("llm-rubric");
+    expect(typeof asserts[1]!.value).toBe("string");
   });
 
   it("handles multiple examples", () => {

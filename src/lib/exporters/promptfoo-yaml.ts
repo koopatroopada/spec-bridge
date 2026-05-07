@@ -1,8 +1,14 @@
 import { dump } from "js-yaml";
 import { specSchema, type Spec } from "../spec-schema";
+import { convertToLlmRubric } from "../llm-rubric-converter";
 
 export function exportToPromptfooYaml(spec: Spec): string {
   const validated = specSchema.parse(spec);
+
+  const rubricAssertions = validated.eval_criteria.map((c) => ({
+    type: "llm-rubric",
+    value: convertToLlmRubric(c.description),
+  }));
 
   const config = {
     description: `${validated.name}: ${validated.description}`,
@@ -15,6 +21,7 @@ export function exportToPromptfooYaml(spec: Spec): string {
           type: "equals",
           value: ex.expected_output,
         },
+        ...rubricAssertions,
       ],
     })),
   };
