@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { SpecForm } from "@/components/spec-form/spec-form";
+import { LintPanel } from "@/components/lint-panel/lint-panel";
 import { exportToJson } from "@/lib/exporters/json-spec";
 import { exportToPromptfooYaml } from "@/lib/exporters/promptfoo-yaml";
 import { exportToPrdMarkdown } from "@/lib/exporters/prd-markdown";
+import { lintSpec, type LintResult } from "@/lib/linter";
 import type { Spec } from "@/lib/spec-schema";
 
 type DownloadItem = {
@@ -15,7 +17,8 @@ type DownloadItem = {
 
 export default function HomePage() {
   const [downloads, setDownloads] = useState<DownloadItem[]>([]);
-  const [prdPreview, setPrdPreview] = useState<string>("");
+  const [prdPreview, setPrdPreview] = useState("");
+  const [lintResult, setLintResult] = useState<LintResult | null>(null);
 
   function handleSubmit(spec: Spec) {
     const safeName = spec.name.replace(/\s+/g, "_");
@@ -46,6 +49,7 @@ export default function HomePage() {
 
     setDownloads(items);
     setPrdPreview(exportToPrdMarkdown(spec));
+    setLintResult(lintSpec(spec));
   }
 
   return (
@@ -58,6 +62,12 @@ export default function HomePage() {
       </header>
 
       <SpecForm onSubmit={handleSubmit} />
+
+      {lintResult && (
+        <section className="mt-6">
+          <LintPanel result={lintResult} />
+        </section>
+      )}
 
       {downloads.length > 0 && (
         <section className="mt-6">
