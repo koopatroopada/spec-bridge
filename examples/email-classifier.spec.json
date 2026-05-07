@@ -1,0 +1,19 @@
+{
+  "name": "邮件分类器",
+  "description": "把客户邮件按紧急程度分为 high / medium / low",
+  "prompt_template": "你是邮件分类助手。请根据邮件内容判断紧急程度，只输出 high / medium / low 中的一个，不要解释。\n\n邮件：{{email}}",
+  "examples": [
+    {
+      "input": { "email": "我订单还没发货，已经一周了！" },
+      "expected_output": "high"
+    },
+    {
+      "input": { "email": "请问发票什么时候开？" },
+      "expected_output": "low"
+    }
+  ],
+  "eval_criteria": [
+    { "description": "输出必须是 high / medium / low 之一" },
+    { "description": "投诉类邮件必须识别为 high" }
+  ]
+}

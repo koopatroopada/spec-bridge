@@ -1,0 +1,15 @@
+{
+  "name": "客服回复助手",
+  "description": "根据客户问题和上下文生成礼貌、专业的客服回复",
+  "prompt_template": "你是客服回复助手。请根据客户问题和历史对话生成礼貌、专业的中文回复。\n\n客户问题：{{question}}\n历史对话：{{history}}\n\n回复：",
+  "examples": [
+    {
+      "input": { "question": "我的包裹什么时候到？", "history": "客户上周下单，订单号 #12345" },
+      "expected_output": "感谢您的耐心等待！您的订单 #12345 预计明天送达，如有问题请随时联系我们。"
+    }
+  ],
+  "eval_criteria": [
+    { "description": "回复必须礼貌且专业" },
+    { "description": "必须基于提供的上下文信息" }
+  ]
+}

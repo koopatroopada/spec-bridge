@@ -1,0 +1,15 @@
+{
+  "name": "文档总结器",
+  "description": "把长文档总结为 3 句话以内的摘要",
+  "prompt_template": "你是文档总结专家。请把下面的文档总结为不超过 3 句话的摘要，保留核心要点。\n\n文档：{{doc}}\n\n摘要：",
+  "examples": [
+    {
+      "input": { "doc": "本文介绍了 React 18 的新特性，包括并发渲染、自动批处理、Suspense 改进等。并发渲染允许 React 在后台准备多个版本的 UI，而自动批处理则减少了不必要的重渲染次数。Suspense 改进让数据获取和代码分割更加无缝。" },
+      "expected_output": "React 18 引入并发渲染、自动批处理和 Suspense 改进，提升了渲染性能和用户体验。"
+    }
+  ],
+  "eval_criteria": [
+    { "description": "摘要不超过 3 句话" },
+    { "description": "必须覆盖文档的核心要点" }
+  ]
+}
