@@ -1,6 +1,6 @@
 # spec-bridge
 
-状态：[active]
+状态：[archived]（2026-05-10 归档，v0.1.0 已发布：https://github.com/koopatroopada/spec-bridge/releases/tag/v0.1.0）
 
 ## 一句话描述它做什么
 
@@ -70,7 +70,7 @@ tests:
 
 ## 项目状态
 
-MVP 开发中。完整开发计划见 `CLAUDE.md`。
+v0.1.0 已发布并归档。完整开发记录见 `CLAUDE.md`，spec 字段语义见 `docs/spec-format.md`。后续如有迭代，会从 `_archived/` 复活。
 
 ## 部署
 
