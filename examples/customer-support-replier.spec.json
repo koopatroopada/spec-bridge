@@ -5,7 +5,8 @@
   "examples": [
     {
       "input": { "question": "我的包裹什么时候到？", "history": "客户上周下单，订单号 #12345" },
-      "expected_output": "感谢您的耐心等待！您的订单 #12345 预计明天送达，如有问题请随时联系我们。"
+      "expected_output": "感谢您的耐心等待！您的订单 #12345 预计明天送达，如有问题请随时联系我们。",
+      "assertion_type": "similar"
     }
   ],
   "eval_criteria": [

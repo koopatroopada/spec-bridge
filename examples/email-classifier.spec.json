@@ -5,11 +5,13 @@
   "examples": [
     {
       "input": { "email": "我订单还没发货，已经一周了！" },
-      "expected_output": "high"
+      "expected_output": "high",
+      "assertion_type": "contains"
     },
     {
       "input": { "email": "请问发票什么时候开？" },
-      "expected_output": "low"
+      "expected_output": "low",
+      "assertion_type": "contains"
     }
   ],
   "eval_criteria": [

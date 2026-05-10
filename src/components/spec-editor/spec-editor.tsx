@@ -15,6 +15,21 @@ type DownloadItem = {
   url: string;
 };
 
+type EvalResult = {
+  success: boolean;
+  result?: {
+    results?: Array<{
+      prompt: string;
+      response: {
+        output: string;
+      };
+      success: boolean;
+      score: number;
+    }>;
+  };
+  error?: string;
+};
+
 export function SpecEditor({
   initialSpec,
   onSave,
@@ -26,6 +41,9 @@ export function SpecEditor({
   const [prdPreview, setPrdPreview] = useState("");
   const [lintResult, setLintResult] = useState<LintResult | null>(null);
   const [saved, setSaved] = useState(false);
+  const [evalResult, setEvalResult] = useState<EvalResult | null>(null);
+  const [evalLoading, setEvalLoading] = useState(false);
+  const [currentSpec, setCurrentSpec] = useState<Spec | null>(null);
 
   function handleSubmit(spec: Spec) {
     const safeName = spec.name.replace(/\s+/g, "_");
@@ -58,6 +76,27 @@ export function SpecEditor({
     setPrdPreview(exportToPrdMarkdown(spec));
     setLintResult(lintSpec(spec));
     setSaved(false);
+    setEvalResult(null);
+    setCurrentSpec(spec);
+  }
+
+  async function handleRunEval() {
+    if (!lintResult?.valid || !currentSpec) return;
+
+    setEvalLoading(true);
+    try {
+      const res = await fetch("/api/eval", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spec: currentSpec }),
+      });
+      const data = (await res.json()) as EvalResult;
+      setEvalResult(data);
+    } catch (err) {
+      setEvalResult({ success: false, error: String(err) });
+    } finally {
+      setEvalLoading(false);
+    }
   }
 
   return (
@@ -73,9 +112,7 @@ export function SpecEditor({
       />
 
       {saved && (
-        <p className="text-sm text-green-700">
-          ✅ 已保存到 localStorage
-        </p>
+        <p className="text-sm text-green-700">✅ 已保存到 localStorage</p>
       )}
 
       {lintResult && (
@@ -102,7 +139,51 @@ export function SpecEditor({
                 </a>
               ))}
             </div>
+            {lintResult?.valid && (
+              <button
+                onClick={handleRunEval}
+                disabled={evalLoading}
+                className="mt-3 inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {evalLoading ? "测试中..." : "▶ 运行 promptfoo 测试"}
+              </button>
+            )}
           </div>
+        </section>
+      )}
+
+      {evalResult && (
+        <section className="rounded-lg border border-slate-200 p-4">
+          <h3 className="mb-2 text-sm font-semibold text-slate-800">
+            测试结果
+          </h3>
+          {evalResult.success ? (
+            <div className="space-y-2">
+              {evalResult.result?.results?.map((r, i) => (
+                <div
+                  key={i}
+                  className={`rounded-md p-2 text-sm ${
+                    r.success
+                      ? "bg-green-50 text-green-800"
+                      : "bg-red-50 text-red-800"
+                  }`}
+                >
+                  <p className="font-medium">
+                    {r.success ? "✅ 通过" : "❌ 失败"} (score: {r.score})
+                  </p>
+                  <p className="mt-1 text-xs opacity-80">
+                    输出: {r.response.output}
+                  </p>
+                </div>
+              )) ?? (
+                <p className="text-sm text-slate-500">暂无详细结果</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-red-600">
+              测试失败: {evalResult.error}
+            </p>
+          )}
         </section>
       )}
 

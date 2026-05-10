@@ -30,18 +30,23 @@ describe("exportToPromptfooYaml", () => {
     expect(parsed.description).toBe("邮件分类器: 把客户邮件按紧急程度分类");
   });
 
-  it("includes prompt as first item in prompts array", () => {
+  it("includes prompt template as-is", () => {
     const yaml = exportToPromptfooYaml(validSpec);
     const parsed = load(yaml) as Record<string, unknown>;
-    expect(parsed.prompts).toEqual([
-      "你是邮件分类助手。邮件:{{input}}\n输出 high/medium/low。",
-    ]);
+    const prompts = parsed.prompts as string[];
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toBe(
+      "你是邮件分类助手。邮件:{{input}}\n输出 high/medium/low。"
+    );
   });
 
-  it("includes default provider", () => {
+  it("includes provider with temperature 0", () => {
     const yaml = exportToPromptfooYaml(validSpec);
     const parsed = load(yaml) as Record<string, unknown>;
-    expect(parsed.providers).toEqual(["openai:gpt-4o-mini"]);
+    const providers = parsed.providers as Array<Record<string, unknown>>;
+    expect(providers).toHaveLength(1);
+    expect(providers[0]!.id).toBe("deepseek:deepseek-v4-flash");
+    expect(providers[0]!.config).toEqual({ temperature: 0, showThinking: false });
   });
 
   it("maps examples to tests with vars and assert", () => {
@@ -86,5 +91,101 @@ describe("exportToPromptfooYaml", () => {
     expect(() =>
       exportToPromptfooYaml({ ...validSpec, name: "" })
     ).toThrow();
+  });
+
+  it("uses 'contains' assertion when assertion_type is contains", () => {
+    const spec = {
+      ...validSpec,
+      examples: [
+        {
+          input: { email: "x" },
+          expected_output: "positive",
+          assertion_type: "contains" as const,
+        },
+      ],
+    };
+    const yaml = exportToPromptfooYaml(spec);
+    const parsed = load(yaml) as Record<string, unknown>;
+    const tests = parsed.tests as Array<Record<string, unknown>>;
+    const asserts = tests[0]!.assert as Array<Record<string, unknown>>;
+    expect(asserts[0]).toEqual({ type: "contains", value: "positive" });
+  });
+
+  it("uses 'is-json' assertion (no value) when assertion_type is json", () => {
+    const spec = {
+      ...validSpec,
+      examples: [
+        {
+          input: { email: "x" },
+          expected_output: "{\"ok\": true}",
+          assertion_type: "json" as const,
+        },
+      ],
+    };
+    const yaml = exportToPromptfooYaml(spec);
+    const parsed = load(yaml) as Record<string, unknown>;
+    const tests = parsed.tests as Array<Record<string, unknown>>;
+    const asserts = tests[0]!.assert as Array<Record<string, unknown>>;
+    expect(asserts[0]).toEqual({ type: "is-json" });
+    expect(asserts[0]!.value).toBeUndefined();
+  });
+
+  it("defaults to 'equals' when assertion_type is omitted", () => {
+    const yaml = exportToPromptfooYaml(validSpec);
+    const parsed = load(yaml) as Record<string, unknown>;
+    const tests = parsed.tests as Array<Record<string, unknown>>;
+    const asserts = tests[0]!.assert as Array<Record<string, unknown>>;
+    expect(asserts[0]!.type).toBe("equals");
+    expect(asserts[0]!.value).toBe("high");
+  });
+
+  it("attaches SiliconFlow embedding provider to each similar assertion", () => {
+    const spec = {
+      ...validSpec,
+      examples: [
+        {
+          input: { email: "x" },
+          expected_output: "摘要文本",
+          assertion_type: "similar" as const,
+        },
+      ],
+    };
+    const yaml = exportToPromptfooYaml(spec);
+    const parsed = load(yaml) as Record<string, unknown>;
+    const tests = parsed.tests as Array<Record<string, unknown>>;
+    const asserts = tests[0]!.assert as Array<Record<string, unknown>>;
+    expect(asserts[0]).toEqual({
+      type: "similar",
+      value: "摘要文本",
+      provider: {
+        id: "openai:embedding:BAAI/bge-large-zh-v1.5",
+        config: {
+          apiBaseUrl: "https://api.siliconflow.cn/v1",
+          apiKeyEnvar: "SILICONFLOW_API_KEY",
+        },
+      },
+    });
+  });
+
+  it("does not attach embedding provider to non-similar assertions", () => {
+    const yaml = exportToPromptfooYaml(validSpec);
+    const parsed = load(yaml) as Record<string, unknown>;
+    const tests = parsed.tests as Array<Record<string, unknown>>;
+    const asserts = tests[0]!.assert as Array<Record<string, unknown>>;
+    expect(asserts[0]!.provider).toBeUndefined();
+  });
+
+  it("keeps deepseek as default grader for llm-rubric", () => {
+    const yaml = exportToPromptfooYaml(validSpec);
+    const parsed = load(yaml) as Record<string, unknown>;
+    const defaultTest = parsed.defaultTest as Record<string, unknown>;
+    const options = defaultTest.options as Record<string, unknown>;
+    expect(options.provider).toBe("deepseek:deepseek-v4-flash");
+  });
+
+  it("does not embed any API key in the YAML output", () => {
+    const yaml = exportToPromptfooYaml(validSpec);
+    expect(yaml).not.toMatch(/sk-[a-zA-Z0-9]{20,}/);
+    expect(yaml).not.toContain("apiKey:");
   });
 });

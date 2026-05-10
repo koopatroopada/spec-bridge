@@ -44,4 +44,25 @@ describe("exportToJson", () => {
     const parsed = JSON.parse(json);
     expect(parsed.examples[0].input).toEqual({ email: "我订单还没发货!" });
   });
+
+  it("fills assertion_type with default 'equals' when omitted", () => {
+    const json = exportToJson(validSpec);
+    const parsed = JSON.parse(json);
+    expect(parsed.examples[0].assertion_type).toBe("equals");
+  });
+
+  it("preserves explicit assertion_type", () => {
+    const json = exportToJson({
+      ...validSpec,
+      examples: [
+        {
+          input: { email: "x" },
+          expected_output: "summary",
+          assertion_type: "similar" as const,
+        },
+      ],
+    });
+    const parsed = JSON.parse(json);
+    expect(parsed.examples[0].assertion_type).toBe("similar");
+  });
 });

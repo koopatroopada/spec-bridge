@@ -76,4 +76,38 @@ describe("specSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("defaults assertion_type to 'equals' when omitted", () => {
+    const result = specSchema.safeParse(validSpec);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.examples[0]!.assertion_type).toBe("equals");
+    }
+  });
+
+  it("accepts each valid assertion_type value", () => {
+    for (const t of ["equals", "similar", "contains", "json"] as const) {
+      const result = specSchema.safeParse({
+        ...validSpec,
+        examples: [
+          { input: { x: "y" }, expected_output: "z", assertion_type: t },
+        ],
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  it("rejects invalid assertion_type", () => {
+    const result = specSchema.safeParse({
+      ...validSpec,
+      examples: [
+        {
+          input: { x: "y" },
+          expected_output: "z",
+          assertion_type: "regex",
+        },
+      ],
+    });
+    expect(result.success).toBe(false);
+  });
 });

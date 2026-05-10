@@ -5,7 +5,8 @@
   "examples": [
     {
       "input": { "doc": "本文介绍了 React 18 的新特性，包括并发渲染、自动批处理、Suspense 改进等。并发渲染允许 React 在后台准备多个版本的 UI，而自动批处理则减少了不必要的重渲染次数。Suspense 改进让数据获取和代码分割更加无缝。" },
-      "expected_output": "React 18 引入并发渲染、自动批处理和 Suspense 改进，提升了渲染性能和用户体验。"
+      "expected_output": "React 18 引入并发渲染、自动批处理和 Suspense 改进，提升了渲染性能和用户体验。",
+      "assertion_type": "similar"
     }
   ],
   "eval_criteria": [
